@@ -1,0 +1,193 @@
+Graphql 101
+
+Agenda
+- What is Graphql?
+- Rest API vs Graphql
+- What is GraphiQL?
+- Explore Queries
+- Explore Mutation
+
+What is Graphql?
+GraphQL is a query language for your API, and a server-side runtime for executing queries using a type system you define for your data.
+
+Runtime
+Common runtime - nodejs for js code
+A runtime is the environment in which a program or code execute.
+Graphql runtime executes the queries or mutations requests by client.
+
+Type System
+Contract between client and server
+Defines the structure of data that can be queried or mutated.
+type Query {  
+    me: User
+} 
+
+type User {  
+    name: String
+}
+
+Query language
+Type of programming language used to request and retrieve specific data from database and information systems.
+It allow the define what data you want and how you want.
+It is very similar to JSON, but not exactly
+{  
+    me {    
+        name  
+    }
+}
+
+
+
+Rest API vs Graphql
+	Graphql	REST API
+Definition	Query language and runtime	Architectural style for building APIs
+Structure	Single entrypoint, uses query and mutation to request data	Set of endpoint representing specific resources, use http methods to request data
+Flexibility	More flexible , retrieve data in single request	Less flexible, retrieve data in multiple request.
+Data fetching	Exact data, reducing the amount of data	Sometime suffer from over fetching and under fetching
+
+
+GraphiQL
+- IDE , swagger, playground for graphql server, use it as your debugging tool
+- Auto-complete suggestion based on schema
+- Inline error message for invalid queries
+
+https://c99-trainline-web.ttlnonprod.com/graphql
+
+Queries
+At simplest queries are about asking specific fields on objects.
+{
+  v1_railcards {
+    name
+    scopes
+  }
+}
+
+Arguments
+{
+  v1_railcards(
+    connections: "urn:trainline:connection:atoc, urn:trainline:connection:renfe"
+  ) {
+    name
+    scopes
+    connections
+  }
+}
+
+Alias
+{
+  atoc_cards: v1_railcards(
+    connections: "urn:trainline:connection:atoc"
+  ) {
+    name
+    scopes
+    connections
+  }
+  renfe_cards: v1_railcards(
+    connections: "urn:trainline:connection:renfe"
+  ) {
+    name
+    scopes
+    connections
+  }
+}
+
+Fragments
+Fragments let you construct sets of fields, and then include them in queries where you need to.
+concept of fragments is frequently used to split complicated application data requirements into smaller chunks
+{
+  atoc_cards: v1_railcards(
+    connections: "urn:trainline:connection:atoc"
+  ) {
+    ...railcards
+  }
+  renfe_cards: v1_railcards(
+    connections: "urn:trainline:connection:renfe"
+  ) {
+    ...railcards
+  }
+}
+
+fragment railcards on v1_Railcard {
+  name
+  scopes
+  connections
+}
+
+Operation name
+- Query
+- Mutations
+- Subscriptions
+
+Operation name is encouraged because it is very helpful for debugging and server-side logging
+
+Variables
+Way to factor dynamic values out of the query and pass them as a separate dictionary.
+query getRailCards($connections: String! = "urn:trainline:connection:atoc") {
+  v1_railcards(connections: $connections) {
+    name
+    scopes
+    connections
+  }
+}
+
+// variables
+{
+  "connections": "urn:trainline:connection:renfe"
+}
+* All declared variables must be either scalars, enums, or input object types
+* Variable definitions can be optional or required
+* avoid doing manual string interpolation to construct dynamic queries
+
+Directive
+dynamically change the structure and shape of our queries using variables
+* @include(if: Boolean) Only include this field in the result if the argument is true.
+* @skip(if: Boolean) Skip this field if the argument is true.
+query getRailCards($connections: String! = "urn:trainline:connection:atoc", $includeName: Boolean!) {
+  v1_railcards(connections: $connections) {
+    name @skip(if: $includeName)
+    scopes
+    connections
+  }
+}
+
+Inline Fragments
+- GraphQL schemas have the ability to define interfaces and union types
+- If you are querying a field that returns an interface or a union type.
+query v1_price($requestBody: v1_RoutePricingDataSearchRequestInput) {
+  v1_routePricingDataSearch(requestBody: $requestBody) {
+    __typename
+    ... on v1_RoutePricingDataSearchResponse {
+      result {
+        start
+        price {
+          amount
+          currencyCode
+        }
+        journeys {
+          departAt
+        }
+      }
+    }
+  }
+}
+
+
+// variables
+{
+  "requestBody":{
+    "destination":"urn:trainline:generic:loc:MAN2968gb",
+    "origin":"urn:trainline:generic:loc:EUS1444gb",
+    "requestedCurrencyCode":{"requestedCurrencyCode":"GBP"},
+    "timePeriod":"BYDAY",
+    "start":"2024-11-21T00:00:00Z",
+    "end":"2024-11-27T00:00:00Z"
+  }
+}
+
+Mutations
+- Way to modify server-side data
+- Rest API convention not to use GET request to modify data
+- Similar to REST API convention in Graphql that any operations that cause writes should be sent explicitly via a mutation
+- If mutation return an object type, you can ask for fields. This can be useful for fetching the new stat of an object after an update
+
+
